@@ -4,6 +4,38 @@ import BatteryChargingFullIcon from '@mui/icons-material/BatteryChargingFull';
 import SolarPowerIcon from '@mui/icons-material/SolarPower';
 import ElectricMeterIcon from '@mui/icons-material/ElectricMeter';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+const CACHE_KEY = 'energyData';
+const MAX_HISTORY_POINTS = 24; // 24 hours of data
+
+// Simple time formatter
+const formatTime = (date) => {
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
 
 const EnergyManagement = () => {
   // Simulated live data states
@@ -11,19 +43,99 @@ const EnergyManagement = () => {
   const [solarInput, setSolarInput] = useState(850);
   const [powerConsumption, setPowerConsumption] = useState(420);
   const [timeRemaining, setTimeRemaining] = useState(14.5);
+  const [historicalData, setHistoricalData] = useState(() => {
+    const cached = localStorage.getItem(CACHE_KEY);
+    return cached ? JSON.parse(cached) : {
+      battery: [],
+      solar: [],
+      consumption: [],
+      timestamps: []
+    };
+  });
 
-  // Simulate live updates
+  // Update and cache historical data
   useEffect(() => {
+    const updateHistory = () => {
+      const timestamp = formatTime(new Date());
+      
+      setHistoricalData(prev => {
+        const newData = {
+          battery: [...prev.battery, batteryLevel],
+          solar: [...prev.solar, solarInput],
+          consumption: [...prev.consumption, powerConsumption],
+          timestamps: [...prev.timestamps, timestamp]
+        };
+
+        // Keep only last MAX_HISTORY_POINTS
+        if (newData.battery.length > MAX_HISTORY_POINTS) {
+          newData.battery = newData.battery.slice(-MAX_HISTORY_POINTS);
+          newData.solar = newData.solar.slice(-MAX_HISTORY_POINTS);
+          newData.consumption = newData.consumption.slice(-MAX_HISTORY_POINTS);
+          newData.timestamps = newData.timestamps.slice(-MAX_HISTORY_POINTS);
+        }
+
+        // Cache the data
+        localStorage.setItem(CACHE_KEY, JSON.stringify(newData));
+        return newData;
+      });
+    };
+
+    // Update live values and history every 3 seconds
     const interval = setInterval(() => {
-      // Random fluctuations in values
       setBatteryLevel(prev => Math.min(100, Math.max(0, prev + (Math.random() - 0.5) * 2)));
       setSolarInput(prev => Math.max(0, prev + (Math.random() - 0.5) * 50));
       setPowerConsumption(prev => Math.max(0, prev + (Math.random() - 0.5) * 30));
       setTimeRemaining(prev => Math.max(0, prev + (Math.random() - 0.5)));
+      updateHistory();
     }, 3000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [batteryLevel, solarInput, powerConsumption]);
+
+  const chartData = {
+    labels: historicalData.timestamps,
+    datasets: [
+      {
+        label: 'Μπαταρία (%)',
+        data: historicalData.battery,
+        borderColor: '#4caf50',
+        tension: 0.4,
+        fill: false
+      },
+      {
+        label: 'Ηλιακή Ενέργεια (W)',
+        data: historicalData.solar,
+        borderColor: '#ffa726',
+        tension: 0.4,
+        fill: false
+      },
+      {
+        label: 'Κατανάλωση (W)',
+        data: historicalData.consumption,
+        borderColor: '#ef5350',
+        tension: 0.4,
+        fill: false
+      }
+    ]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: false
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true
+      }
+    }
+  };
 
   const getBatteryColor = (level) => {
     if (level > 60) return '#4caf50';
@@ -134,22 +246,22 @@ const EnergyManagement = () => {
           />
         </Grid>
 
-        {/* Historical Graph could be added here */}
+        {/* Historical Graph */}
         <Grid item xs={12}>
           <Paper 
             elevation={3} 
             sx={{ 
               p: 3, 
               borderRadius: '12px',
-              height: '300px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
+              height: '400px'
             }}
           >
-            <Typography variant="h6" color="text.secondary">
+            <Typography variant="h6" color="text.secondary" gutterBottom>
               Ιστορικό Ενέργειας (24 ώρες)
             </Typography>
+            <Box sx={{ height: 'calc(100% - 40px)' }}>
+              <Line data={chartData} options={chartOptions} />
+            </Box>
           </Paper>
         </Grid>
       </Grid>
