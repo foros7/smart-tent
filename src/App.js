@@ -10,6 +10,8 @@ import WbSunnyIcon from '@mui/icons-material/WbSunny';
 import BatteryChargingFullIcon from '@mui/icons-material/BatteryChargingFull';
 import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import FoodOrdering from './pages/FoodOrdering';
+import { campingLocations } from './data/locations';
 
 const Dashboard = () => {
   const [tentData, setTentData] = useState({
@@ -20,20 +22,20 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    // Load cached data from localStorage
     const loadCachedData = () => {
-      const weatherData = localStorage.getItem('weather_39.3441,23.0454');
+      const savedLocation = sessionStorage.getItem('selectedCampsite');
+      const currentLocation = savedLocation ? JSON.parse(savedLocation) : campingLocations[0];
+      
+      const weatherCacheKey = `weather_${currentLocation.coordinates[1]}_${currentLocation.coordinates[0]}`;
+      const weatherData = localStorage.getItem(weatherCacheKey);
       const energyData = localStorage.getItem('energy_data');
       const lightingData = localStorage.getItem('lighting_settings');
 
       setTentData({
-        weather: weatherData ? JSON.parse(weatherData).weather : null,
+        weather: weatherData ? JSON.parse(weatherData).data : null,
         energy: energyData ? JSON.parse(energyData) : { batteryLevel: 75, solarInput: 850 },
         lighting: lightingData ? JSON.parse(lightingData) : { brightness: 80, color: '#FFE5B4' },
-        location: {
-          name: "Camping Γαία - Πήλιο",
-          coordinates: "39.3441°N, 23.0454°E"
-        }
+        location: currentLocation
       });
     };
 
@@ -250,6 +252,7 @@ const App = () => {
           <Route path="/weather-tracking" element={<WeatherTracking />} />
           <Route path="/energy-management" element={<EnergyManagement />} />
           <Route path="/lighting-control" element={<LightingControl />} />
+          <Route path="/food-ordering" element={<FoodOrdering />} />
         </Routes>
         <Navigation />
       </Container>

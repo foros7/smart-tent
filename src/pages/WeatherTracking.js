@@ -1,317 +1,391 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Grid, Paper, Box, Stack, Chip, Card, CardContent, CircularProgress } from '@mui/material';
+import { 
+  Typography, 
+  Grid, 
+  Paper, 
+  Box,
+  Button,
+  Slider,
+  Alert,
+  Snackbar,
+  Switch,
+  FormControlLabel,
+  CircularProgress,
+  Card,
+  CardContent,
+  IconButton
+} from '@mui/material';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
-import CloudIcon from '@mui/icons-material/Cloud';
+import UmbrellaIcon from '@mui/icons-material/Umbrella';
 import AirIcon from '@mui/icons-material/Air';
-import WaterDropIcon from '@mui/icons-material/WaterDrop';
-import ThermostatIcon from '@mui/icons-material/Thermostat';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
+import WaterIcon from '@mui/icons-material/Water';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import ThunderstormIcon from '@mui/icons-material/Thunderstorm';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import { campingLocations } from '../data/locations';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const WEATHER_API_KEY = '82fb891eb9c80e5ccd5c95deb2c6fcfd';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 const WeatherTracking = () => {
-  const [selectedLocation, setSelectedLocation] = useState({
-    name: "Camping Γαία - Πήλιο",
-    location: { lat: 39.3441, lng: 23.0454 }
+  const [weatherData, setWeatherData] = useState({
+    temperature: 25,
+    humidity: 60,
+    windSpeed: 15,
+    isRaining: false,
+    description: 'Αίθριος',
+    feelsLike: 26,
+    pressure: 1013,
+    visibility: 10000,
+    location: "Camping Γαία - Πήλιο"
   });
-  const [weatherData, setWeatherData] = useState(null);
-  const [forecast, setForecast] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [lastFetch, setLastFetch] = useState({});
+  const [protectiveCovers, setProtectiveCovers] = useState({
+    front: false,
+    back: false,
+    left: false,
+    right: false
+  });
+  const [coverAngle, setCoverAngle] = useState(45);
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
+  const [historicalData, setHistoricalData] = useState({
+    labels: [],
+    temperature: [],
+    humidity: [],
+    windSpeed: []
+  });
 
-  const campingLocations = [
-    {
-      name: "Camping Γαία - Πήλιο",
-      location: { lat: 39.3441, lng: 23.0454 }
-    },
-    {
-      name: "Παραλία Καλόγρια",
-      location: { lat: 38.1566, lng: 21.5967 }
-    },
-    {
-      name: "Camping Μετέωρα",
-      location: { lat: 39.7217, lng: 21.6307 }
-    },
-    {
-      name: "Eco Camping Όλυμπος",
-      location: { lat: 40.1033, lng: 22.3584 }
+  const fetchWeatherData = async () => {
+    if (getCachedWeather()) return;
+
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const savedLocation = sessionStorage.getItem('selectedCampsite');
+      const currentLocation = savedLocation ? JSON.parse(savedLocation) : campingLocations[0];
+      
+      const response = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${currentLocation.coordinates[1]}&lon=${currentLocation.coordinates[0]}&appid=${WEATHER_API_KEY}&units=metric&lang=el`
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Cache the new data
+      const cacheKey = `weather_${currentLocation.coordinates[1]}_${currentLocation.coordinates[0]}`;
+      localStorage.setItem(cacheKey, JSON.stringify({
+        data,
+        timestamp: Date.now()
+      }));
+
+      setWeatherData({
+        temperature: data.main.temp,
+        humidity: data.main.humidity,
+        windSpeed: (data.wind?.speed || 0) * 3.6,
+        isRaining: ['Rain', 'Drizzle', 'Thunderstorm'].includes(data.weather?.[0]?.main),
+        description: data.weather?.[0]?.description?.charAt(0).toUpperCase() + 
+                    data.weather?.[0]?.description?.slice(1) || 'Άγνωστο',
+        feelsLike: data.main.feels_like,
+        pressure: data.main.pressure,
+        visibility: Math.round(data.visibility / 100) / 10,
+        location: currentLocation.name
+      });
+
+    } catch (error) {
+      console.error('Error fetching weather data:', error);
+      setError('Σφάλμα κατά τη λήψη δεδομένων καιρού');
+      getCachedWeather(); // Fallback to cached data
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const getCachedWeather = () => {
+    const savedLocation = sessionStorage.getItem('selectedCampsite');
+    const currentLocation = savedLocation ? JSON.parse(savedLocation) : campingLocations[0];
+    
+    const cacheKey = `weather_${currentLocation.coordinates[1]}_${currentLocation.coordinates[0]}`;
+    const cachedData = localStorage.getItem(cacheKey);
+    
+    if (cachedData) {
+      const { data, timestamp } = JSON.parse(cachedData);
+      const isExpired = Date.now() - timestamp > CACHE_DURATION;
+      
+      if (!isExpired) {
+        setWeatherData({
+          temperature: data.main.temp,
+          humidity: data.main.humidity,
+          windSpeed: (data.wind?.speed || 0) * 3.6,
+          isRaining: ['Rain', 'Drizzle', 'Thunderstorm'].includes(data.weather?.[0]?.main),
+          description: data.weather?.[0]?.description?.charAt(0).toUpperCase() + 
+                      data.weather?.[0]?.description?.slice(1) || 'Άγνωστο',
+          feelsLike: data.main.feels_like,
+          pressure: data.main.pressure,
+          visibility: Math.round(data.visibility / 100) / 10,
+          location: currentLocation.name
+        });
+        return true;
+      }
+    }
+    return false;
+  };
 
   useEffect(() => {
-    const fetchWeatherData = async () => {
-      const locationKey = `${selectedLocation.location.lat},${selectedLocation.location.lng}`;
-      const now = Date.now();
-      
-      // Check if we have cached data that's still valid
-      if (lastFetch[locationKey] && 
-          weatherData && 
-          forecast && 
-          (now - lastFetch[locationKey]) < CACHE_DURATION) {
-        console.log('Using cached weather data');
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-      
-      try {
-        console.log('Fetching fresh weather data for:', selectedLocation.name);
-        
-        // Current weather
-        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${selectedLocation.location.lat}&lon=${selectedLocation.location.lng}&appid=${WEATHER_API_KEY}&units=metric&lang=el`;
-        
-        const weatherResponse = await fetch(weatherUrl);
-        if (!weatherResponse.ok) {
-          if (weatherResponse.status === 401) {
-            throw new Error('Πρόβλημα με το κλειδί API. Παρακαλώ επικοινωνήστε με τον διαχειριστή.');
-          } else {
-            throw new Error(`Σφάλμα στην ανάκτηση δεδομένων καιρού (${weatherResponse.status})`);
-          }
-        }
-        const weatherResult = await weatherResponse.json();
-
-        // 5-day forecast
-        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${selectedLocation.location.lat}&lon=${selectedLocation.location.lng}&appid=${WEATHER_API_KEY}&units=metric&lang=el`;
-        
-        const forecastResponse = await fetch(forecastUrl);
-        if (!forecastResponse.ok) {
-          throw new Error(`Σφάλμα στην ανάκτηση πρόγνωσης καιρού (${forecastResponse.status})`);
-        }
-        const forecastResult = await forecastResponse.json();
-
-        // Update cache timestamp
-        setLastFetch(prev => ({
-          ...prev,
-          [locationKey]: now
-        }));
-
-        // Store data in localStorage for persistence
-        localStorage.setItem(`weather_${locationKey}`, JSON.stringify({
-          weather: weatherResult,
-          forecast: forecastResult,
-          timestamp: now
-        }));
-
-        setWeatherData(weatherResult);
-        setForecast(forecastResult);
-      } catch (error) {
-        console.error('Error fetching weather data:', error);
-        setError(error.message);
-
-        // Try to load cached data from localStorage if available
-        const cachedData = localStorage.getItem(`weather_${locationKey}`);
-        if (cachedData) {
-          const { weather, forecast } = JSON.parse(cachedData);
-          console.log('Using fallback cached data');
-          setWeatherData(weather);
-          setForecast(forecast);
-        }
-      }
-      setLoading(false);
-    };
-
-    // Initial load - try to load from localStorage first
-    const locationKey = `${selectedLocation.location.lat},${selectedLocation.location.lng}`;
-    const cachedData = localStorage.getItem(`weather_${locationKey}`);
-    if (cachedData) {
-      const { weather, forecast, timestamp } = JSON.parse(cachedData);
-      if (Date.now() - timestamp < CACHE_DURATION) {
-        console.log('Loading from localStorage');
-        setWeatherData(weather);
-        setForecast(forecast);
-        setLastFetch(prev => ({
-          ...prev,
-          [locationKey]: timestamp
-        }));
-        setLoading(false);
-        return;
-      }
-    }
-
     fetchWeatherData();
-    
-    // Refresh every 5 minutes only if the tab is active
-    let interval;
-    if (document.visibilityState === 'visible') {
-      interval = setInterval(fetchWeatherData, CACHE_DURATION);
-    }
+    const interval = setInterval(fetchWeatherData, CACHE_DURATION);
+    return () => clearInterval(interval);
+  }, []);
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchWeatherData();
-        interval = setInterval(fetchWeatherData, CACHE_DURATION);
-      } else {
-        clearInterval(interval);
+  // Check for dangerous weather conditions
+  useEffect(() => {
+    if (weatherData.windSpeed > 30) {
+      setNotification({
+        open: true,
+        message: 'Προειδοποίηση: Ισχυροί άνεμοι! Προτείνεται η χρήση προστατευτικών καλυμμάτων.',
+        severity: 'warning'
+      });
+    } else if (weatherData.isRaining && weatherData.windSpeed > 20) {
+      setNotification({
+        open: true,
+        message: 'Προειδοποίηση: Καταιγίδα! Ενεργοποιήστε τα προστατευτικά καλύμματα.',
+        severity: 'warning'
+      });
+    }
+  }, [weatherData.windSpeed, weatherData.isRaining]);
+
+  const handleCoverChange = (side) => {
+    setProtectiveCovers(prev => {
+      const newCovers = { ...prev, [side]: !prev[side] };
+      setNotification({
+        open: true,
+        message: `${newCovers[side] ? 'Ενεργοποίηση' : 'Απενεργοποίηση'} καλύμματος ${side}`,
+        severity: 'success'
+      });
+      return newCovers;
+    });
+  };
+
+  const MetricCard = ({ icon, title, value, unit, color }) => (
+    <Card sx={{ 
+      height: '100%',
+      transition: 'transform 0.2s',
+      '&:hover': {
+        transform: 'translateY(-4px)',
+        boxShadow: 3
       }
-    };
+    }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          {icon}
+          <Typography variant="h6" sx={{ ml: 1 }}>
+            {title}
+          </Typography>
+        </Box>
+        <Typography variant="h4" sx={{ color }}>
+          {value}{unit}
+        </Typography>
+      </CardContent>
+    </Card>
+  );
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [selectedLocation]);
-
-  const getWeatherIcon = (condition) => {
-    switch(condition) {
-      case '01d': case '01n': return <WbSunnyIcon sx={{ color: '#FFB300' }} />;
-      case '02d': case '02n': case '03d': case '03n': return <CloudIcon sx={{ color: '#90A4AE' }} />;
-      case '04d': case '04n': return <CloudIcon sx={{ color: '#78909C' }} />;
-      case '09d': case '09n': case '10d': case '10n': return <WaterDropIcon sx={{ color: '#64B5F6' }} />;
-      case '11d': case '11n': return <ThunderstormIcon sx={{ color: '#5C6BC0' }} />;
-      default: return <WbSunnyIcon sx={{ color: '#FFB300' }} />;
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true
+      }
     }
   };
-
-  const getWindDirection = (deg) => {
-    const directions = ['Β', 'ΒΑ', 'Α', 'ΝΑ', 'Ν', 'ΝΔ', 'Δ', 'ΒΔ'];
-    return directions[Math.round(deg / 45) % 8];
-  };
-
-  const getDayName = (date) => {
-    const days = ['Κυριακή', 'Δευτέρα', 'Τρίτη', 'Τετάρτη', 'Πέμπτη', 'Παρασκευή', 'Σάββατο'];
-    return days[new Date(date).getDay()];
-  };
-
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Paper elevation={3} sx={{ p: 3, borderRadius: '12px', textAlign: 'center' }}>
-          <Typography color="error">
-            Σφάλμα: {error}
-          </Typography>
-        </Paper>
-      </Box>
-    );
-  }
 
   return (
     <Box sx={{ p: 3, pb: 10 }}>
-      <Typography variant="h4" sx={{ mb: 3, color: '#2c3e50', fontWeight: 'bold' }}>
-        Καιρικές Συνθήκες
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" sx={{ color: '#2c3e50', fontWeight: 'bold' }}>
+          Παρακολούθηση Καιρού
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <LocationOnIcon sx={{ mr: 1, color: '#E91E63' }} />
+          <Typography variant="subtitle1" sx={{ mr: 2 }}>
+            {weatherData.location}
+          </Typography>
+          <IconButton onClick={fetchWeatherData} disabled={loading}>
+            <RefreshIcon />
+          </IconButton>
+        </Box>
+      </Box>
 
-      <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
-        {campingLocations.map((location) => (
-          <Chip
-            key={location.name}
-            label={location.name}
-            icon={<LocationOnIcon />}
-            onClick={() => setSelectedLocation(location)}
-            variant={selectedLocation.name === location.name ? "filled" : "outlined"}
-            color={selectedLocation.name === location.name ? "primary" : "default"}
-          />
-        ))}
-      </Stack>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       <Grid container spacing={3}>
-        {weatherData && weatherData.weather && weatherData.weather[0] && (
-          <Grid item xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 3, borderRadius: '12px' }}>
-              <Stack spacing={3}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Typography variant="h5">{selectedLocation.name}</Typography>
-                  {getWeatherIcon(weatherData.weather[0].icon)}
-                </Stack>
-                
-                <Typography variant="h2" sx={{ fontWeight: 'bold' }}>
-                  {Math.round(weatherData.main?.temp || 0)}°C
+        {/* Weather Metrics */}
+        <Grid item xs={12} md={8}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <MetricCard
+                icon={<WbSunnyIcon sx={{ fontSize: 40, color: '#ff9800' }} />}
+                title="Θερμοκρασία"
+                value={weatherData.temperature.toFixed(1)}
+                unit="°C"
+                color="#ff9800"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <MetricCard
+                icon={<WaterIcon sx={{ fontSize: 40, color: '#2196f3' }} />}
+                title="Υγρασία"
+                value={weatherData.humidity}
+                unit="%"
+                color="#2196f3"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <MetricCard
+                icon={<AirIcon sx={{ fontSize: 40, color: '#4caf50' }} />}
+                title="Ταχύτητα Ανέμου"
+                value={weatherData.windSpeed.toFixed(1)}
+                unit=" km/h"
+                color="#4caf50"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <MetricCard
+                icon={<UmbrellaIcon sx={{ fontSize: 40, color: weatherData.isRaining ? '#f44336' : '#757575' }} />}
+                title="Βροχόπτωση"
+                value={weatherData.isRaining ? 'Ναι' : 'Όχι'}
+                unit=""
+                color={weatherData.isRaining ? '#f44336' : '#757575'}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Paper sx={{ p: 2, mt: 2 }}>
+                <Typography variant="body1" sx={{ mb: 1 }}>
+                  Περιγραφή: {weatherData.description}
                 </Typography>
-
-                <Typography variant="body1" color="text.secondary">
-                  {weatherData.weather[0].description}
+                <Typography variant="body1">
+                  Αίσθηση: {weatherData.feelsLike}°C
                 </Typography>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Grid>
 
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <WaterDropIcon color="primary" />
-                      <Typography>
-                        Υγρασία: {weatherData.main?.humidity || 0}%
-                      </Typography>
-                    </Stack>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <AirIcon color="primary" />
-                      <Typography>
-                        Άνεμος: {Math.round((weatherData.wind?.speed || 0) * 3.6)} km/h {getWindDirection(weatherData.wind?.deg || 0)}
-                      </Typography>
-                    </Stack>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <CompareArrowsIcon color="primary" />
-                      <Typography>
-                        Πίεση: {weatherData.main?.pressure || 0} hPa
-                      </Typography>
-                    </Stack>
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <VisibilityIcon color="primary" />
-                      <Typography>
-                        Ορατότητα: {((weatherData.visibility || 0) / 1000).toFixed(1)} km
-                      </Typography>
-                    </Stack>
-                  </Grid>
+        {/* Protective Covers Control */}
+        <Grid item xs={12} md={4}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Προστατευτικά Καλύμματα
+            </Typography>
+            <Grid container spacing={2}>
+              {Object.entries(protectiveCovers).map(([side, isActive]) => (
+                <Grid item xs={6} key={side}>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={isActive}
+                        onChange={() => handleCoverChange(side)}
+                        color="primary"
+                      />
+                    }
+                    label={`Κάλυμμα ${side}`}
+                  />
                 </Grid>
-              </Stack>
-            </Paper>
-          </Grid>
-        )}
+              ))}
+              <Grid item xs={12}>
+                <Typography gutterBottom>
+                  Γωνία Καλυμμάτων: {coverAngle}°
+                </Typography>
+                <Slider
+                  value={coverAngle}
+                  onChange={(e, newValue) => setCoverAngle(newValue)}
+                  min={0}
+                  max={90}
+                  valueLabelDisplay="auto"
+                />
+              </Grid>
+            </Grid>
+          </Paper>
+        </Grid>
 
-        {forecast && forecast.list && (
-          <Grid item xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 3, borderRadius: '12px' }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>5ήμερη Πρόγνωση</Typography>
-              <Stack spacing={2}>
-                {forecast.list
-                  .filter((item, index) => index % 8 === 0)
-                  .slice(0, 5)
-                  .map((day, index) => (
-                    <Card key={index} variant="outlined">
-                      <CardContent>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Typography variant="h6">{index === 0 ? 'Σήμερα' : getDayName(day.dt_txt)}</Typography>
-                          <Stack direction="row" spacing={2} alignItems="center">
-                            {day.weather && day.weather[0] && getWeatherIcon(day.weather[0].icon)}
-                            <Typography variant="h6">{Math.round(day.main?.temp || 0)}°C</Typography>
-                          </Stack>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  ))}
-              </Stack>
-            </Paper>
-          </Grid>
-        )}
-
-        {!weatherData && !loading && (
-          <Grid item xs={12}>
-            <Paper elevation={3} sx={{ p: 3, borderRadius: '12px', textAlign: 'center' }}>
-              <Typography color="error">
-                Δεν ήταν δυνατή η φόρτωση των δεδομένων καιρού. Παρακαλώ δοκιμάστε ξανά αργότερα.
-              </Typography>
-            </Paper>
-          </Grid>
-        )}
+        {/* Weather Chart */}
+        <Grid item xs={12}>
+          <Paper sx={{ p: 3, height: '400px' }}>
+            <Typography variant="h6" gutterBottom>
+              Ιστορικό Καιρού
+            </Typography>
+            <Box sx={{ height: 'calc(100% - 40px)' }}>
+              <Line data={{
+                labels: historicalData.labels,
+                datasets: [
+                  {
+                    label: 'Θερμοκρασία (°C)',
+                    data: historicalData.temperature,
+                    borderColor: '#ff9800',
+                    tension: 0.4
+                  },
+                  {
+                    label: 'Υγρασία (%)',
+                    data: historicalData.humidity,
+                    borderColor: '#2196f3',
+                    tension: 0.4
+                  },
+                  {
+                    label: 'Ταχύτητα Ανέμου (km/h)',
+                    data: historicalData.windSpeed,
+                    borderColor: '#4caf50',
+                    tension: 0.4
+                  }
+                ]
+              }} options={chartOptions} />
+            </Box>
+          </Paper>
+        </Grid>
       </Grid>
+
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={() => setNotification({ ...notification, open: false })}
+      >
+        <Alert severity={notification.severity}>
+          {notification.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
