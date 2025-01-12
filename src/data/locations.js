@@ -13,7 +13,8 @@ export const campingLocations = [
         length: "8.5 km",
         elevation: "+450m"
       }
-    ]
+    ],
+    elevation: 850
   },
   {
     id: 2,
@@ -29,7 +30,8 @@ export const campingLocations = [
         length: "11.2 km",
         elevation: "+920m"
       }
-    ]
+    ],
+    elevation: 1100
   },
   {
     id: 3,
@@ -45,7 +47,8 @@ export const campingLocations = [
         length: "4.5 km",
         elevation: "+80m"
       }
-    ]
+    ],
+    elevation: 10
   },
   {
     id: 4,
@@ -61,7 +64,8 @@ export const campingLocations = [
         length: "7.8 km",
         elevation: "+350m"
       }
-    ]
+    ],
+    elevation: 5
   },
   {
     id: 5,
@@ -77,7 +81,8 @@ export const campingLocations = [
         length: "5.6 km",
         elevation: "+240m"
       }
-    ]
+    ],
+    elevation: 5
   },
   {
     id: 6,
@@ -99,7 +104,8 @@ export const campingLocations = [
         length: "9.2 km",
         elevation: "+450m"
       }
-    ]
+    ],
+    elevation: 1100
   },
   {
     id: 7,
@@ -115,6 +121,7 @@ export const campingLocations = [
         length: "3.8 km",
         elevation: "+120m"
       }
-    ]
+    ],
+    elevation: 5
   }
 ]; 

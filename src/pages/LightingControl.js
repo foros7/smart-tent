@@ -8,7 +8,7 @@ import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 import AcUnitIcon from '@mui/icons-material/AcUnit';
 import WbTwilightIcon from '@mui/icons-material/WbTwilight';
 
-const LightingControl = () => {
+const LightingControl = ({ darkMode }) => {
   const [color, setColor] = useState('#ffffff');
   const [brightness, setBrightness] = useState(100);
 
@@ -27,12 +27,19 @@ const LightingControl = () => {
   };
 
   return (
-    <Box sx={{ p: 3, pb: 10 }}>
-      <Typography variant="h4" sx={{ mb: 3, color: '#2c3e50', fontWeight: 'bold' }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, pb: { xs: 8, sm: 10 } }}>
+      <Typography 
+        variant="h4" 
+        sx={{ 
+          mb: 3, 
+          color: darkMode ? '#ffffff' : '#2c3e50',
+          fontWeight: 'bold' 
+        }}
+      >
         Έλεγχος Φωτισμού
       </Typography>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         {/* Color Preview */}
         <Grid item xs={12}>
           <Paper 
@@ -49,52 +56,85 @@ const LightingControl = () => {
 
         {/* Presets */}
         <Grid item xs={12}>
-          <Typography variant="h6" sx={{ mb: 2, color: '#2c3e50' }}>
-            Προεπιλογές
-          </Typography>
-          <Grid container spacing={2}>
-            {presets.map((preset, index) => (
-              <Grid item xs={6} sm={4} md={2} key={index}>
-                <Card 
-                  sx={{ 
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s',
-                    '&:hover': {
-                      transform: 'translateY(-4px)'
-                    }
-                  }}
-                  onClick={() => applyPreset(preset)}
-                >
-                  <CardContent>
-                    <Stack 
-                      direction="column" 
-                      spacing={1} 
-                      alignItems="center"
-                    >
-                      <IconButton 
-                        sx={{ 
-                          bgcolor: preset.color,
-                          opacity: preset.brightness / 100,
-                          '&:hover': { bgcolor: preset.color }
-                        }}
+          <Paper 
+            sx={{ 
+              p: 3, 
+              bgcolor: darkMode ? '#132f4c' : '#ffffff',
+              borderRadius: '12px'
+            }}
+          >
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                mb: 2, 
+                color: darkMode ? '#ffffff' : '#2c3e50' 
+              }}
+            >
+              Προεπιλογές
+            </Typography>
+            <Grid container spacing={2}>
+              {presets.map((preset, index) => (
+                <Grid item xs={6} sm={4} md={2} key={index}>
+                  <Card 
+                    sx={{ 
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s',
+                      bgcolor: darkMode ? '#0a1929' : '#ffffff',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        bgcolor: darkMode ? '#173954' : '#f5f5f5'
+                      }
+                    }}
+                    onClick={() => applyPreset(preset)}
+                  >
+                    <CardContent>
+                      <Stack 
+                        direction="column" 
+                        spacing={1} 
+                        alignItems="center"
                       >
-                        {preset.icon}
-                      </IconButton>
-                      <Typography variant="body2">
-                        {preset.name}
-                      </Typography>
-                    </Stack>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+                        <IconButton 
+                          sx={{ 
+                            bgcolor: preset.color,
+                            opacity: preset.brightness / 100,
+                            '&:hover': { bgcolor: preset.color }
+                          }}
+                        >
+                          {preset.icon}
+                        </IconButton>
+                        <Typography 
+                          variant="body2"
+                          sx={{ 
+                            color: darkMode ? '#ffffff' : '#2c3e50'
+                          }}
+                        >
+                          {preset.name}
+                        </Typography>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </Paper>
         </Grid>
 
         {/* Color Picker */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, borderRadius: '12px' }}>
-            <Typography variant="h6" sx={{ mb: 2, color: '#2c3e50' }}>
+          <Paper 
+            sx={{ 
+              p: 3, 
+              borderRadius: '12px',
+              bgcolor: darkMode ? '#132f4c' : '#ffffff'
+            }}
+          >
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                mb: 2, 
+                color: darkMode ? '#ffffff' : '#2c3e50'
+              }}
+            >
               Επιλογή Χρώματος
             </Typography>
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
@@ -105,13 +145,25 @@ const LightingControl = () => {
 
         {/* Brightness Control */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, borderRadius: '12px' }}>
-            <Typography variant="h6" sx={{ mb: 2, color: '#2c3e50' }}>
+          <Paper 
+            sx={{ 
+              p: 3, 
+              borderRadius: '12px',
+              bgcolor: darkMode ? '#132f4c' : '#ffffff'
+            }}
+          >
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                mb: 2, 
+                color: darkMode ? '#ffffff' : '#2c3e50'
+              }}
+            >
               Φωτεινότητα
             </Typography>
             <Box sx={{ px: 2 }}>
               <Stack spacing={2} direction="row" alignItems="center">
-                <NightlightIcon sx={{ color: '#666' }} />
+                <NightlightIcon sx={{ color: darkMode ? '#ffffff' : '#666' }} />
                 <Slider
                   value={brightness}
                   onChange={(e, newValue) => setBrightness(newValue)}
@@ -124,7 +176,7 @@ const LightingControl = () => {
                     }
                   }}
                 />
-                <WbSunnyIcon sx={{ color: '#666' }} />
+                <WbSunnyIcon sx={{ color: darkMode ? '#ffffff' : '#666' }} />
               </Stack>
             </Box>
           </Paper>

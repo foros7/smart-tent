@@ -27,7 +27,7 @@ import { campingLocations } from '../data/locations';
 
 const MAPBOX_TOKEN = 'pk.eyJ1IjoiZm9yb3M3Z3IiLCJhIjoiY201czloOWkxMGZodDJpc2Nlc3lqb3plbSJ9.nfbeESQ73VcpOSomQDSYpw';
 
-const TouristNavigation = () => {
+const TouristNavigation = ({ darkMode }) => {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
@@ -92,18 +92,80 @@ const TouristNavigation = () => {
 
   return (
     <Box sx={{ p: 3, pb: 10 }}>
-      <Typography variant="h4" sx={{ mb: 3, color: '#2c3e50', fontWeight: 'bold' }}>
-        Επιλογή Τοποθεσίας Camping
+      <Typography 
+        variant="h3" 
+        sx={{ 
+          margin: 0,
+          fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+          fontWeight: 700,
+          fontSize: '2.125rem',
+          lineHeight: 1.235,
+          letterSpacing: '0em',
+          color: darkMode ? '#ffffff' : '#2c3e50',
+          mb: 3
+        }}
+      >
+        Πλοήγηση & Αξιοθέατα
       </Typography>
 
-      {/* Current Location Display */}
-      <Paper sx={{ p: 2, mb: 3, bgcolor: '#f5f5f5' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <LocationOnIcon sx={{ mr: 1, color: '#E91E63' }} />
-          <Typography variant="h6">
-            Τρέχουσα Τοποθεσία: {currentLocation.name}
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 2, 
+          mb: 3,
+          bgcolor: darkMode ? '#132f4c' : '#ffffff'
+        }}
+      >
+        <Typography 
+          variant="h6" 
+          sx={{ 
+            mb: 2,
+            color: darkMode ? '#ffffff' : '#2c3e50'
+          }}
+        >
+          Τρέχουσα Τοποθεσία
+        </Typography>
+        {currentLocation ? (
+          <Box>
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                mb: 1,
+                color: darkMode ? '#ffffff' : '#2c3e50',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}
+            >
+              <LocationOnIcon color="secondary" />
+              {currentLocation.name}
+            </Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: darkMode ? '#b0bec5' : '#546e7a'
+              }}
+            >
+              {currentLocation.type === 'beach' ? 'Παραθαλάσσιο' : 'Ορεινό'} Camping
+            </Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: darkMode ? '#b0bec5' : '#546e7a'
+              }}
+            >
+              Υψόμετρο: {currentLocation.elevation}m
+            </Typography>
+          </Box>
+        ) : (
+          <Typography 
+            sx={{ 
+              color: darkMode ? '#b0bec5' : '#546e7a'
+            }}
+          >
+            Δεν έχει επιλεγεί τοποθεσία
           </Typography>
-        </Box>
+        )}
       </Paper>
 
       {/* Mapbox Map */}

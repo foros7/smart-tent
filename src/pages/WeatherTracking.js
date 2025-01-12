@@ -48,7 +48,7 @@ const WEATHER_API_KEY = '82fb891eb9c80e5ccd5c95deb2c6fcfd';
 
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
-const WeatherTracking = () => {
+const WeatherTracking = ({ darkMode }) => {
   const [weatherData, setWeatherData] = useState({
     temperature: 25,
     humidity: 60,
@@ -192,26 +192,34 @@ const WeatherTracking = () => {
   };
 
   const MetricCard = ({ icon, title, value, unit, color }) => (
-    <Card sx={{ 
-      height: '100%',
-      transition: 'transform 0.2s',
-      '&:hover': {
-        transform: 'translateY(-4px)',
-        boxShadow: 3
-      }
-    }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          {icon}
-          <Typography variant="h6" sx={{ ml: 1 }}>
-            {title}
+    <Paper
+      elevation={3}
+      sx={{
+        height: '100%',
+        transition: 'transform 0.2s',
+        cursor: 'pointer',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: 6,
+        },
+        borderRadius: 2,
+        overflow: 'hidden'
+      }}
+    >
+      <Card sx={{ height: '100%' }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            {React.cloneElement(icon, { sx: { mr: 1, color } })}
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              {title}
+            </Typography>
+          </Box>
+          <Typography variant="h4" sx={{ color }}>
+            {value}{unit}
           </Typography>
-        </Box>
-        <Typography variant="h4" sx={{ color }}>
-          {value}{unit}
-        </Typography>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </Paper>
   );
 
   const chartOptions = {
@@ -230,18 +238,30 @@ const WeatherTracking = () => {
   };
 
   return (
-    <Box sx={{ p: 3, pb: 10 }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, pb: { xs: 8, sm: 10 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ color: '#2c3e50', fontWeight: 'bold' }}>
+        <Typography 
+          variant="h4" 
+          sx={{ 
+            color: darkMode ? '#ffffff' : '#2c3e50', 
+            fontWeight: 'bold' 
+          }}
+        >
           Παρακολούθηση Καιρού
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <LocationOnIcon sx={{ mr: 1, color: '#E91E63' }} />
-          <Typography variant="subtitle1" sx={{ mr: 2 }}>
+          <Typography 
+            variant="subtitle1" 
+            sx={{ 
+              mr: 2,
+              color: darkMode ? '#ffffff' : '#2c3e50'
+            }}
+          >
             {weatherData.location}
           </Typography>
           <IconButton onClick={fetchWeatherData} disabled={loading}>
-            <RefreshIcon />
+            <RefreshIcon sx={{ color: darkMode ? '#90caf9' : '#1976d2' }} />
           </IconButton>
         </Box>
       </Box>
@@ -253,102 +273,62 @@ const WeatherTracking = () => {
       )}
 
       <Grid container spacing={3}>
-        {/* Weather Metrics */}
-        <Grid item xs={12} md={8}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <MetricCard
-                icon={<WbSunnyIcon sx={{ fontSize: 40, color: '#ff9800' }} />}
-                title="Θερμοκρασία"
-                value={weatherData.temperature.toFixed(1)}
-                unit="°C"
-                color="#ff9800"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <MetricCard
-                icon={<WaterIcon sx={{ fontSize: 40, color: '#2196f3' }} />}
-                title="Υγρασία"
-                value={weatherData.humidity}
-                unit="%"
-                color="#2196f3"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <MetricCard
-                icon={<AirIcon sx={{ fontSize: 40, color: '#4caf50' }} />}
-                title="Ταχύτητα Ανέμου"
-                value={weatherData.windSpeed.toFixed(1)}
-                unit=" km/h"
-                color="#4caf50"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <MetricCard
-                icon={<UmbrellaIcon sx={{ fontSize: 40, color: weatherData.isRaining ? '#f44336' : '#757575' }} />}
-                title="Βροχόπτωση"
-                value={weatherData.isRaining ? 'Ναι' : 'Όχι'}
-                unit=""
-                color={weatherData.isRaining ? '#f44336' : '#757575'}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Paper sx={{ p: 2, mt: 2 }}>
-                <Typography variant="body1" sx={{ mb: 1 }}>
-                  Περιγραφή: {weatherData.description}
-                </Typography>
-                <Typography variant="body1">
-                  Αίσθηση: {weatherData.feelsLike}°C
-                </Typography>
-              </Paper>
-            </Grid>
-          </Grid>
+        {/* Weather Cards */}
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            icon={<WbSunnyIcon sx={{ fontSize: 40 }} />}
+            title="Θερμοκρασία"
+            value={weatherData.temperature.toFixed(1)}
+            unit="°C"
+            color="#ff9800"
+          />
         </Grid>
-
-        {/* Protective Covers Control */}
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Προστατευτικά Καλύμματα
-            </Typography>
-            <Grid container spacing={2}>
-              {Object.entries(protectiveCovers).map(([side, isActive]) => (
-                <Grid item xs={6} key={side}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={isActive}
-                        onChange={() => handleCoverChange(side)}
-                        color="primary"
-                      />
-                    }
-                    label={`Κάλυμμα ${side}`}
-                  />
-                </Grid>
-              ))}
-              <Grid item xs={12}>
-                <Typography gutterBottom>
-                  Γωνία Καλυμμάτων: {coverAngle}°
-                </Typography>
-                <Slider
-                  value={coverAngle}
-                  onChange={(e, newValue) => setCoverAngle(newValue)}
-                  min={0}
-                  max={90}
-                  valueLabelDisplay="auto"
-                />
-              </Grid>
-            </Grid>
-          </Paper>
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            icon={<WaterIcon sx={{ fontSize: 40 }} />}
+            title="Υγρασία"
+            value={weatherData.humidity}
+            unit="%"
+            color="#2196f3"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            icon={<AirIcon sx={{ fontSize: 40 }} />}
+            title="Ταχύτητα Ανέμου"
+            value={weatherData.windSpeed.toFixed(1)}
+            unit=" km/h"
+            color="#4caf50"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <MetricCard
+            icon={<UmbrellaIcon sx={{ fontSize: 40 }} />}
+            title="Βροχόπτωση"
+            value={weatherData.isRaining ? 'Ναι' : 'Όχι'}
+            unit=""
+            color={weatherData.isRaining ? '#f44336' : '#757575'}
+          />
         </Grid>
 
         {/* Weather Chart */}
         <Grid item xs={12}>
-          <Paper sx={{ p: 3, height: '400px' }}>
-            <Typography variant="h6" gutterBottom>
+          <Paper 
+            sx={{ 
+              p: 3, 
+              mb: 3,
+              bgcolor: darkMode ? '#132f4c' : '#ffffff',
+              borderRadius: 2
+            }}
+          >
+            <Typography 
+              variant="h6" 
+              gutterBottom
+              sx={{ color: darkMode ? '#ffffff' : '#2c3e50' }}
+            >
               Ιστορικό Καιρού
             </Typography>
-            <Box sx={{ height: 'calc(100% - 40px)' }}>
+            <Box sx={{ height: 400 }}>
               <Line data={{
                 labels: historicalData.labels,
                 datasets: [
@@ -373,6 +353,67 @@ const WeatherTracking = () => {
                 ]
               }} options={chartOptions} />
             </Box>
+          </Paper>
+        </Grid>
+
+        {/* Protective Covers Control */}
+        <Grid item xs={12}>
+          <Paper 
+            sx={{ 
+              p: 3,
+              bgcolor: darkMode ? '#132f4c' : '#ffffff',
+              position: 'relative',
+              zIndex: 1,
+              borderRadius: 2
+            }}
+          >
+            <Typography 
+              variant="h6" 
+              gutterBottom
+              sx={{ color: darkMode ? '#ffffff' : '#2c3e50' }}
+            >
+              Προστατευτικά Καλύμματα
+            </Typography>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={8}>
+                <Grid container spacing={2}>
+                  {Object.entries(protectiveCovers).map(([side, isActive]) => (
+                    <Grid item xs={6} md={3} key={side}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={isActive}
+                            onChange={() => handleCoverChange(side)}
+                            color="primary"
+                          />
+                        }
+                        label={`Κάλυμμα ${side}`}
+                        sx={{ 
+                          color: darkMode ? '#b0bec5' : '#546e7a'
+                        }}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Typography 
+                  gutterBottom
+                  sx={{ 
+                    color: darkMode ? '#b0bec5' : '#546e7a'
+                  }}
+                >
+                  Γωνία Καλυμμάτων: {coverAngle}°
+                </Typography>
+                <Slider
+                  value={coverAngle}
+                  onChange={(e, newValue) => setCoverAngle(newValue)}
+                  min={0}
+                  max={90}
+                  valueLabelDisplay="auto"
+                />
+              </Grid>
+            </Grid>
           </Paper>
         </Grid>
       </Grid>
