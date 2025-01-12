@@ -1,4 +1,4 @@
-name: GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
@@ -8,27 +8,27 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      - name: Setup Node
-        uses: actions/setup-node@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
         with:
-          node-version: "18"
-          cache: "npm"
+          node-version: "16"
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm install
 
       - name: Build
         run: npm run build
         env:
-          REACT_APP_MAPBOX_TOKEN: ${{ secrets.REACT_APP_MAPBOX_TOKEN }}
-          REACT_APP_WEATHER_API_KEY: ${{ secrets.REACT_APP_WEATHER_API_KEY }}
+          PUBLIC_URL: /smart-tent
 
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@4.1.5
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build
-          cname: smart-tent.foros7.gr # Optional: If you have a custom domain
+          branch: gh-pages
+          folder: build
+          clean: true

@@ -825,7 +825,7 @@ const App = () => {
   return (
     <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
       <CssBaseline />
-      <Router>
+      <Router basename="/smart-tent">
         <Box sx={{ pb: 7 }}>
           <AppBar 
             position="static" 
