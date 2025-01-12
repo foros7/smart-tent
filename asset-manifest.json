@@ -1,17 +1,17 @@
 {
   "files": {
     "main.css": "/smart-tent/static/css/main.decec01a.css",
-    "main.js": "/smart-tent/static/js/main.b40e307d.js",
+    "main.js": "/smart-tent/static/js/main.f1a4412d.js",
     "static/js/879.e131a8ae.chunk.js": "/smart-tent/static/js/879.e131a8ae.chunk.js",
     "static/js/488.e8d53f7f.chunk.js": "/smart-tent/static/js/488.e8d53f7f.chunk.js",
     "index.html": "/smart-tent/index.html",
     "main.decec01a.css.map": "/smart-tent/static/css/main.decec01a.css.map",
-    "main.b40e307d.js.map": "/smart-tent/static/js/main.b40e307d.js.map",
+    "main.f1a4412d.js.map": "/smart-tent/static/js/main.f1a4412d.js.map",
     "879.e131a8ae.chunk.js.map": "/smart-tent/static/js/879.e131a8ae.chunk.js.map",
     "488.e8d53f7f.chunk.js.map": "/smart-tent/static/js/488.e8d53f7f.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.decec01a.css",
-    "static/js/main.b40e307d.js"
+    "static/js/main.f1a4412d.js"
   ]
 }
