@@ -14,7 +14,8 @@ import {
   Snackbar,
   Alert,
   Chip,
-  Rating
+  Rating,
+  ListItemIcon
 } from '@mui/material';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CampingIcon from '@mui/icons-material/Campaign';
@@ -24,6 +25,7 @@ import HikingIcon from '@mui/icons-material/Hiking';
 import Map, { Marker, Popup, NavigationControl } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { campingLocations } from '../data/locations';
+import EventIcon from '@mui/icons-material/Event';
 
 const MAPBOX_TOKEN = 'pk.eyJ1IjoiZm9yb3M3Z3IiLCJhIjoiY201czloOWkxMGZodDJpc2Nlc3lqb3plbSJ9.nfbeESQ73VcpOSomQDSYpw';
 
@@ -33,7 +35,7 @@ const TouristNavigation = ({ darkMode }) => {
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
   const [currentLocation, setCurrentLocation] = useState(() => {
     const saved = sessionStorage.getItem('selectedCampsite');
-    return saved ? JSON.parse(saved) : campingLocations[0];
+    return saved ? JSON.parse(saved) : null;
   });
   const [viewState, setViewState] = useState({
     longitude: 23.7275,
@@ -53,6 +55,9 @@ const TouristNavigation = ({ darkMode }) => {
       lat: selectedLocation.coordinates[1],
       lon: selectedLocation.coordinates[0]
     }));
+    
+    // Dispatch custom event
+    window.dispatchEvent(new CustomEvent('locationChanged'));
     
     setViewState({
       longitude: selectedLocation.coordinates[0],
@@ -158,13 +163,18 @@ const TouristNavigation = ({ darkMode }) => {
             </Typography>
           </Box>
         ) : (
-          <Typography 
-            sx={{ 
-              color: darkMode ? '#b0bec5' : '#546e7a'
-            }}
-          >
-            Δεν έχει επιλεγεί τοποθεσία
-          </Typography>
+          <Box sx={{ textAlign: 'center', py: 2 }}>
+            <Typography 
+              variant="body1" 
+              color="error" 
+              sx={{ mb: 1, fontWeight: 'medium' }}
+            >
+              Δεν έχει επιλεγεί camping
+            </Typography>
+            <Typography color="text.secondary">
+              Παρακαλώ επιλέξτε camping από τον χάρτη ή την λίστα
+            </Typography>
+          </Box>
         )}
       </Paper>
 
@@ -190,7 +200,7 @@ const TouristNavigation = ({ darkMode }) => {
             >
               <LocationOnIcon 
                 sx={{ 
-                  color: location.id === currentLocation.id ? '#E91E63' : '#1976d2',
+                  color: currentLocation && location.id === currentLocation.id ? '#E91E63' : '#1976d2',
                   cursor: 'pointer',
                   '&:hover': { color: '#E91E63' }
                 }} 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Route, Routes, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from "react-router-dom";
 import { 
   AppBar, 
   Toolbar, 
@@ -31,6 +31,9 @@ import {
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
+import EventIcon from '@mui/icons-material/Event';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import HelpIcon from '@mui/icons-material/Help';
 
 // Components
 import Navigation from "./components/Navigation";
@@ -39,9 +42,15 @@ import WeatherTracking from "./pages/WeatherTracking";
 import EnergyManagement from "./pages/EnergyManagement";
 import LightingControl from "./pages/LightingControl";
 import FoodOrdering from './pages/FoodOrdering';
+import Events from './pages/Events';
+import UpcomingEvents from './components/UpcomingEvents';
+import LoginAnimation from './components/LoginAnimation';
+import HelpGuide from './components/HelpGuide';
+import TourGuide from './components/TourGuide';
 
 // Data
 import { campingLocations } from './data/locations';
+import { eventsByLocation } from './data/events';
 
 // Charts
 import { Line } from 'react-chartjs-2';
@@ -104,23 +113,40 @@ const WeatherCard = ({ data, onClick, layout }) => (
             Καιρός
           </Typography>
         </Box>
-        {data.weather ? (
-          <>
-            <Typography variant="h4" sx={{ mb: 1, color: data.weather.main?.temp > 30 ? '#f44336' : '#4caf50' }}>
-              {Math.round(data.weather.main?.temp)}°C
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Υγρασία: {data.weather.main?.humidity}%
-            </Typography>
-          </>
+        {data.location ? (
+          data.weather ? (
+            <>
+              <Typography variant="h4" sx={{ mb: 1, color: data.weather.main?.temp > 30 ? '#f44336' : '#4caf50' }}>
+                {Math.round(data.weather.main?.temp)}°C
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Υγρασία: {data.weather.main?.humidity}%
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {data.weather.weather?.[0]?.description}
+              </Typography>
+            </>
+          ) : (
+            <Typography color="text.secondary">Φόρτωση...</Typography>
+          )
         ) : (
-          <Typography color="text.secondary">Φόρτωση...</Typography>
+          <Box sx={{ textAlign: 'center', py: 2 }}>
+            <Typography 
+              variant="body1" 
+              color="error" 
+              sx={{ mb: 1, fontWeight: 'medium' }}
+            >
+              Δεν έχει επιλεγεί camping
+            </Typography>
+            <Typography color="text.secondary">
+              Παρακαλώ επιλέξτε camping για την πλήρη εμπειρία
+            </Typography>
+          </Box>
         )}
       </CardContent>
     </Card>
   </Paper>
 );
-
 const EnergyCard = ({ data, onClick, layout }) => (
   <Paper
     elevation={3}
@@ -170,51 +196,63 @@ const EnergyCard = ({ data, onClick, layout }) => (
   </Paper>
 );
 
-const LightingCard = ({ data, onClick, layout }) => (
-  <Paper
-    elevation={3}
-    sx={{
-      height: '100%',
-      transition: 'transform 0.2s',
-      cursor: 'pointer',
-      '&:hover': {
-        transform: 'translateY(-4px)',
-        boxShadow: 6,
-      },
-      borderRadius: 2,
-      overflow: 'hidden'
-    }}
-    onClick={onClick}
-  >
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <LightbulbIcon sx={{ mr: 1, color: '#FFA726' }} />
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            Φωτισμός
+const LightingCard = ({ data, onClick, layout }) => {
+  const [lightingSettings] = useState(() => {
+    const saved = localStorage.getItem('lighting_settings');
+    return saved ? JSON.parse(saved) : {
+      brightness: 80,
+      color: '#FFE5B4',
+      mode: 'manual'
+    };
+  });
+
+  return (
+    <Paper
+      elevation={3}
+      sx={{
+        height: '100%',
+        transition: 'transform 0.2s',
+        cursor: 'pointer',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: 6,
+        },
+        borderRadius: 2,
+        overflow: 'hidden'
+      }}
+      onClick={onClick}
+    >
+      <Card sx={{ height: '100%' }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <LightbulbIcon sx={{ mr: 1, color: '#FFA726' }} />
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              Φωτισμός
+            </Typography>
+          </Box>
+          <Typography variant="h4" sx={{ mb: 1 }}>
+            {lightingSettings.brightness}%
           </Typography>
-        </Box>
-        <Typography variant="h4" sx={{ mb: 1 }}>
-          {data.lighting.brightness}%
-        </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box 
-            sx={{ 
-              width: 40, 
-              height: 40, 
-              borderRadius: '50%', 
-              bgcolor: data.lighting.color,
-              border: '2px solid #ddd'
-            }} 
-          />
-          <Typography variant="body2" color="text.secondary">
-            {data.lighting.mode === 'auto' ? 'Αυτόματη' : 'Χειροκίνητη'}
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
-  </Paper>
-);
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box 
+              sx={{ 
+                width: 40, 
+                height: 40, 
+                borderRadius: '50%', 
+                bgcolor: lightingSettings.color,
+                border: '2px solid #ddd',
+                opacity: lightingSettings.brightness / 100
+              }} 
+            />
+            <Typography variant="body2" color="text.secondary">
+              {lightingSettings.mode === 'auto' ? 'Αυτόματη' : 'Χειροκίνητη'}
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    </Paper>
+  );
+};
 
 const LocationCard = ({ data, onClick, layout }) => (
   <Paper
@@ -250,12 +288,112 @@ const LocationCard = ({ data, onClick, layout }) => (
             </Typography>
           </>
         ) : (
-          <Typography color="text.secondary">Επιλέξτε τοποθεσία...</Typography>
+          <Box sx={{ textAlign: 'center', py: 2 }}>
+            <Typography 
+              variant="body1" 
+              color="error" 
+              sx={{ mb: 1, fontWeight: 'medium' }}
+            >
+              Δεν έχει επιλεγεί camping
+            </Typography>
+            <Typography color="text.secondary">
+              Παρακαλώ επιλέξτε camping για την πλήρη εμπειρία
+            </Typography>
+          </Box>
         )}
       </CardContent>
     </Card>
   </Paper>
 );
+
+const EventsCard = ({ data, onClick, layout }) => {
+  const [userParticipation] = useState(() => {
+    const saved = localStorage.getItem('userEventParticipation');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [events] = useState(() => {
+    const savedLocation = sessionStorage.getItem('selectedCampsite');
+    const currentLocation = savedLocation ? JSON.parse(savedLocation) : null;
+    const locationType = currentLocation?.type === 'beach' ? 'beach' : 'mountain';
+    const savedEvents = localStorage.getItem(`events_${locationType}`);
+    return savedEvents ? JSON.parse(savedEvents) : eventsByLocation[locationType];
+  });
+
+  return (
+    <Paper
+      elevation={3}
+      sx={{
+        height: '100%',
+        transition: 'transform 0.2s',
+        cursor: 'pointer',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: 6,
+        },
+        borderRadius: 2,
+        overflow: 'hidden',
+        bgcolor: data.darkMode ? '#132f4c' : '#ffffff'
+      }}
+      onClick={onClick}
+    >
+      <Box sx={{ height: '100%', p: 0 }}>
+        <UpcomingEvents 
+          darkMode={data.darkMode}
+          userParticipation={userParticipation}
+          events={events}
+        />
+      </Box>
+    </Paper>
+  );
+};
+
+const TimeCard = ({ onClick }) => {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <Paper
+      elevation={3}
+      sx={{
+        height: '100%',
+        transition: 'transform 0.2s',
+        cursor: 'pointer',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: 6,
+        },
+        borderRadius: 2,
+        overflow: 'hidden'
+      }}
+      onClick={onClick}
+    >
+      <Card sx={{ height: '100%' }}>
+        <CardContent sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <AccessTimeIcon sx={{ mr: 1, color: '#FFB300' }} />
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              Current Time
+            </Typography>
+          </Box>
+          <Typography variant="h4" sx={{ mb: 1 }}>
+            {currentTime.toLocaleTimeString()}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {currentTime.toLocaleDateString()}
+          </Typography>
+        </CardContent>
+      </Card>
+    </Paper>
+  );
+};
 
 // Helper function for card titles
 const getCardTitle = (cardType) => {
@@ -263,7 +401,9 @@ const getCardTitle = (cardType) => {
     weather: 'Καιρός',
     energy: 'Ενέργεια',
     lighting: 'Φωτισμός',
-    location: 'Τοποθεσία'
+    location: 'Τοποθεσία',
+    events: 'Εκδηλώσεις',
+    time: 'Ώρα'
   };
   return titles[cardType];
 };
@@ -275,10 +415,13 @@ const Dashboard = ({ darkMode, setDarkMode }) => {
     layout: 'grid',
     visibleCards: {
       weather: true,
-      location: true,
       energy: true,
-      lighting: true
+      lighting: true,
+      location: true,
+      events: true,
+      time: true
     },
+    cardsOrder: ['lighting', 'location', 'events', 'weather', 'energy', 'time'],
     showChart: true
   };
   
@@ -319,8 +462,11 @@ const Dashboard = ({ darkMode, setDarkMode }) => {
     localStorage.setItem('dashboard_settings', JSON.stringify(newSettings));
   };
 
-  const getCardSize = () => {
-    return dashboardSettings.layout === 'list' ? 12 : 3;
+  const getCardSize = (cardType) => {
+    if (dashboardSettings.layout === 'list') return 12;
+    
+    // Αν είναι η κάρτα events, weather ή energy, παίρνει 4 columns
+    return 6;
   };
 
   // Settings menu component
@@ -398,6 +544,8 @@ const Dashboard = ({ darkMode, setDarkMode }) => {
                     {card === 'energy' && <BatteryChargingFullIcon />}
                     {card === 'lighting' && <LightbulbIcon />}
                     {card === 'location' && <LocationOnIcon />}
+                    {card === 'events' && <EventIcon />}
+                    {card === 'time' && <AccessTimeIcon />}
                   </ListItemIcon>
                   <ListItemText 
                     primary={getCardTitle(card)}
@@ -452,7 +600,9 @@ const Dashboard = ({ darkMode, setDarkMode }) => {
       weather: WeatherCard,
       energy: EnergyCard,
       lighting: LightingCard,
-      location: LocationCard
+      location: LocationCard,
+      events: EventsCard,
+      time: TimeCard
     };
     return cards[type];
   };
@@ -480,30 +630,43 @@ const Dashboard = ({ darkMode, setDarkMode }) => {
         end: '06:00'
       }
     },
-    location: null
+    location: null,
+    nextEvent: null,
+    darkMode: darkMode
   });
 
   useEffect(() => {
     const loadCachedData = () => {
       const savedLocation = sessionStorage.getItem('selectedCampsite');
-      const currentLocation = savedLocation ? JSON.parse(savedLocation) : campingLocations[0];
+      const currentLocation = savedLocation ? JSON.parse(savedLocation) : null;
       
-      const weatherCacheKey = `weather_${currentLocation.coordinates[1]}_${currentLocation.coordinates[0]}`;
-      const weatherData = localStorage.getItem(weatherCacheKey);
-      const energyData = localStorage.getItem('energy_data');
-      const lightingData = localStorage.getItem('lighting_settings');
+      if (currentLocation) {
+        const weatherCacheKey = `weather_${currentLocation.coordinates[1]}_${currentLocation.coordinates[0]}`;
+        const weatherData = localStorage.getItem(weatherCacheKey);
+        const energyData = localStorage.getItem('energy_data');
+        const lightingData = localStorage.getItem('lighting_settings');
 
-      setTentData(prev => ({
-        ...prev,
-        weather: weatherData ? JSON.parse(weatherData).data : null,
-        energy: energyData ? JSON.parse(energyData) : prev.energy,
-        lighting: lightingData ? JSON.parse(lightingData) : prev.lighting,
-        location: currentLocation
-      }));
+        setTentData(prev => ({
+          ...prev,
+          weather: weatherData ? JSON.parse(weatherData).data : null,
+          energy: energyData ? JSON.parse(energyData) : prev.energy,
+          lighting: lightingData ? JSON.parse(lightingData) : prev.lighting,
+          location: currentLocation
+        }));
+      }
     };
 
     loadCachedData();
+    window.addEventListener('locationChanged', loadCachedData);
+    return () => window.removeEventListener('locationChanged', loadCachedData);
   }, []);
+
+  useEffect(() => {
+    setTentData(prev => ({
+      ...prev,
+      darkMode: darkMode
+    }));
+  }, [darkMode]);
 
   const getStatusColor = (value, type) => {
     switch(type) {
@@ -523,7 +686,8 @@ const Dashboard = ({ darkMode, setDarkMode }) => {
       weather: '/weather-tracking',
       energy: '/energy-management',
       lighting: '/lighting-control',
-      location: '/tourist-navigation'
+      location: '/tourist-navigation',
+      events: '/events'
     };
 
     navigate(routes[cardType]);
@@ -559,6 +723,10 @@ const Dashboard = ({ darkMode, setDarkMode }) => {
     }
   });
 
+  // Add states
+  const [showHelp, setShowHelp] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+
   return (
     <Box sx={{ 
       py: 4, 
@@ -582,28 +750,19 @@ const Dashboard = ({ darkMode, setDarkMode }) => {
       </Box>
 
       <Grid container spacing={3}>
-        {Object.entries(dashboardSettings?.visibleCards || defaultSettings.visibleCards)
-          .filter(([_, isVisible]) => isVisible)
-          .map(([cardType]) => (
+        {defaultSettings.cardsOrder
+          .filter(cardType => dashboardSettings?.visibleCards?.[cardType] ?? defaultSettings.visibleCards[cardType])
+          .map((cardType) => (
             <Grid 
               item 
               xs={12} 
-              md={getCardSize()}
+              md={getCardSize(cardType)}
               key={cardType}
             >
               {React.createElement(getCardComponent(cardType), {
                 data: tentData,
                 onClick: () => handleCardClick(cardType),
-                layout: dashboardSettings?.layout || 'grid',
-                sx: (dashboardSettings?.layout || 'grid') === 'list' ? {
-                  '& .MuiPaper-root': {
-                    display: 'flex',
-                    flexDirection: 'row',
-                    '& .MuiCardContent-root': {
-                      flex: 1
-                    }
-                  }
-                } : {}
+                layout: dashboardSettings?.layout || 'grid'
               })}
             </Grid>
           ))}
@@ -656,6 +815,21 @@ const Dashboard = ({ darkMode, setDarkMode }) => {
       )}
 
       <SettingsMenu />
+
+      <HelpGuide 
+        open={showHelp} 
+        onClose={() => setShowHelp(false)}
+        startTour={() => setShowTour(true)}
+      />
+      
+      {showTour && (
+        <TourGuide 
+          onClose={() => {
+            setShowTour(false);
+            localStorage.setItem('toured', 'true');
+          }} 
+        />
+      )}
     </Box>
   );
 };
@@ -812,20 +986,45 @@ const darkTheme = createTheme({
   }
 });
 
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+};
+
 const App = () => {
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
   });
 
+  // Add state for animation and help/tour
+  const [showAnimation, setShowAnimation] = useState(true);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
+
+  if (showAnimation) {
+    return (
+      <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
+        <CssBaseline />
+        <LoginAnimation onComplete={() => setShowAnimation(false)} darkMode={darkMode} />
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
       <CssBaseline />
       <Router basename="/smart-tent">
+        <ScrollToTop />
         <Box sx={{ pb: 7 }}>
           <AppBar 
             position="static" 
@@ -837,13 +1036,21 @@ const App = () => {
           >
             <Toolbar sx={{ justifyContent: 'space-between' }}>
               <Typography variant="h6">Interactive Tent</Typography>
-              <IconButton 
-                color="inherit" 
-                onClick={() => setDarkMode(!darkMode)}
-                sx={{ ml: 1 }}
-              >
-                {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
-              </IconButton>
+              <Box>
+                <IconButton 
+                  color="inherit" 
+                  onClick={() => setShowHelp(true)}
+                  sx={{ mr: 1 }}
+                >
+                  <HelpIcon />
+                </IconButton>
+                <IconButton 
+                  color="inherit" 
+                  onClick={() => setDarkMode(!darkMode)}
+                >
+                  {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+                </IconButton>
+              </Box>
             </Toolbar>
           </AppBar>
           <Container maxWidth="lg">
@@ -855,9 +1062,25 @@ const App = () => {
               <Route path="/energy-management" element={<EnergyManagement darkMode={darkMode} />} />
               <Route path="/lighting-control" element={<LightingControl darkMode={darkMode} />} />
               <Route path="/food-ordering" element={<FoodOrdering darkMode={darkMode} />} />
+              <Route path="/events" element={<Events darkMode={darkMode} />} />
             </Routes>
           </Container>
           <Navigation />
+
+          <HelpGuide 
+            open={showHelp} 
+            onClose={() => setShowHelp(false)}
+            startTour={() => setShowTour(true)}
+          />
+          
+          {showTour && (
+            <TourGuide 
+              onClose={() => {
+                setShowTour(false);
+                localStorage.setItem('toured', 'true');
+              }} 
+            />
+          )}
         </Box>
       </Router>
     </ThemeProvider>

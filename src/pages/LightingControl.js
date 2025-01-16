@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Grid, Slider, Card, CardContent, IconButton, Stack, Button } from '@mui/material';
 import { HexColorPicker } from 'react-colorful';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';
@@ -9,8 +9,24 @@ import AcUnitIcon from '@mui/icons-material/AcUnit';
 import WbTwilightIcon from '@mui/icons-material/WbTwilight';
 
 const LightingControl = ({ darkMode }) => {
-  const [color, setColor] = useState('#ffffff');
-  const [brightness, setBrightness] = useState(100);
+  const [color, setColor] = useState(() => {
+    const saved = localStorage.getItem('lighting_settings');
+    return saved ? JSON.parse(saved).color : '#FFE5B4'; // Warm light default
+  });
+  
+  const [brightness, setBrightness] = useState(() => {
+    const saved = localStorage.getItem('lighting_settings');
+    return saved ? JSON.parse(saved).brightness : 80; // 80% default
+  });
+
+  // Add useEffect to save settings when they change
+  useEffect(() => {
+    localStorage.setItem('lighting_settings', JSON.stringify({
+      color,
+      brightness,
+      mode: 'manual'
+    }));
+  }, [color, brightness]);
 
   const presets = [
     { name: 'Ημέρα', color: '#FFE5B4', brightness: 100, icon: <WbSunnyIcon /> },

@@ -7,6 +7,7 @@ import LightbulbIcon from '@mui/icons-material/Lightbulb';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import HomeIcon from '@mui/icons-material/Home';
+import EventIcon from '@mui/icons-material/Event';
 
 const Navigation = () => {
   const navigate = useNavigate();
@@ -66,6 +67,11 @@ const Navigation = () => {
           label="Φαγητό"
           value="/food-ordering"
           icon={<RestaurantIcon />}
+        />
+        <BottomNavigationAction
+          label="Εκδηλώσεις"
+          value="/events"
+          icon={<EventIcon />}
         />
       </BottomNavigation>
     </Paper>
