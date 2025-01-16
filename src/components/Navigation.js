@@ -32,9 +32,13 @@ const Navigation = () => {
         }}
         sx={{ 
           height: 60,
+          overflowX: 'auto',
           '& .MuiBottomNavigationAction-root': {
-            minWidth: { xs: 'auto', sm: 100 },
-            padding: { xs: '6px 8px', sm: '6px 16px' }
+            minWidth: { xs: 'auto', sm: 80 },
+            padding: { xs: '6px 8px', sm: '6px 12px' },
+            '& .MuiBottomNavigationAction-label': {
+              fontSize: { xs: '0.625rem', sm: '0.75rem' }
+            }
           }
         }}
       >
@@ -42,36 +46,43 @@ const Navigation = () => {
           label="Αρχική"
           value="/"
           icon={<HomeIcon />}
+          sx={{ flex: { xs: '1 1 auto', sm: 'none' } }}
         />
         <BottomNavigationAction 
-          label="Πλοήγηση" 
+          label="Χάρτης" 
           value="/tourist-navigation" 
           icon={<LocationOnIcon />} 
+          sx={{ flex: { xs: '1 1 auto', sm: 'none' } }}
         />
         <BottomNavigationAction
           label="Καιρός"
           value="/weather-tracking"
           icon={<WbSunnyIcon />}
+          sx={{ flex: { xs: '1 1 auto', sm: 'none' } }}
         />
         <BottomNavigationAction
           label="Ενέργεια"
           value="/energy-management"
           icon={<BatteryChargingFullIcon />}
+          sx={{ flex: { xs: '1 1 auto', sm: 'none' } }}
         />
         <BottomNavigationAction
           label="Φωτισμός"
           value="/lighting-control"
           icon={<LightbulbIcon />}
+          sx={{ flex: { xs: '1 1 auto', sm: 'none' } }}
         />
         <BottomNavigationAction
           label="Φαγητό"
           value="/food-ordering"
           icon={<RestaurantIcon />}
+          sx={{ flex: { xs: '1 1 auto', sm: 'none' } }}
         />
         <BottomNavigationAction
-          label="Εκδηλώσεις"
+          label="Events"
           value="/events"
           icon={<EventIcon />}
+          sx={{ flex: { xs: '1 1 auto', sm: 'none' } }}
         />
       </BottomNavigation>
     </Paper>
